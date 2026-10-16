@@ -5,7 +5,7 @@ def env(key, default=""):
 
 BASE_URL = env("TAWSEEL_BASE_URL", "https://delivery-for-less.vercel.app")
 HEADLESS = env("HEADLESS", "1") == "1"
-MODEL = env("AGENT_MODEL", "gpt-4o-mini")
+MODEL = env("AGENT_MODEL", "llama-3.3-70b-versatile")  # Groq model
 MAX_STEPS = int(env("AGENT_MAX_STEPS", "25"))
 ARTIFACT_DIR = env("ARTIFACT_DIR", "artifacts")
 POD_FILE = env("POD_FILE", "fixtures/pod.png")
