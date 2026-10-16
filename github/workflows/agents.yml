@@ -1,0 +1,71 @@
+name: TAWSEEL Agent Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: recon
+        type: choice
+        options:
+          - recon
+          - happy_path
+
+jobs:
+  agents:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Build fixtures
+        run: python make_fixtures.py
+
+      - name: Run recon
+        if: ${{ github.event.inputs.mode == 'recon' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TAWSEEL_BASE_URL: ${{ secrets.TAWSEEL_BASE_URL }}
+          TAWSEEL_SENDER_EMAIL: ${{ secrets.TAWSEEL_SENDER_EMAIL }}
+          TAWSEEL_SENDER_PASSWORD: ${{ secrets.TAWSEEL_SENDER_PASSWORD }}
+          TAWSEEL_COURIER_EMAIL: ${{ secrets.TAWSEEL_COURIER_EMAIL }}
+          TAWSEEL_COURIER_PASSWORD: ${{ secrets.TAWSEEL_COURIER_PASSWORD }}
+          TAWSEEL_ADMIN_EMAIL: ${{ secrets.TAWSEEL_ADMIN_EMAIL }}
+          TAWSEEL_ADMIN_PASSWORD: ${{ secrets.TAWSEEL_ADMIN_PASSWORD }}
+          AGENT_MODEL: gpt-4o-mini
+          HEADLESS: "1"
+        run: python recon.py
+
+      - name: Run happy path
+        if: ${{ github.event.inputs.mode == 'happy_path' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TAWSEEL_BASE_URL: ${{ secrets.TAWSEEL_BASE_URL }}
+          TAWSEEL_SENDER_EMAIL: ${{ secrets.TAWSEEL_SENDER_EMAIL }}
+          TAWSEEL_SENDER_PASSWORD: ${{ secrets.TAWSEEL_SENDER_PASSWORD }}
+          TAWSEEL_COURIER_EMAIL: ${{ secrets.TAWSEEL_COURIER_EMAIL }}
+          TAWSEEL_COURIER_PASSWORD: ${{ secrets.TAWSEEL_COURIER_PASSWORD }}
+          TAWSEEL_ADMIN_EMAIL: ${{ secrets.TAWSEEL_ADMIN_EMAIL }}
+          TAWSEEL_ADMIN_PASSWORD: ${{ secrets.TAWSEEL_ADMIN_PASSWORD }}
+          AGENT_MODEL: gpt-4o-mini
+          HEADLESS: "1"
+        run: python orchestrator.py
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tawseel-artifacts
+          path: artifacts/
+          retention-days: 14
