@@ -43,7 +43,7 @@ jobs:
           TAWSEEL_COURIER_PASSWORD: ${{ secrets.TAWSEEL_COURIER_PASSWORD }}
           TAWSEEL_ADMIN_EMAIL: ${{ secrets.TAWSEEL_ADMIN_EMAIL }}
           TAWSEEL_ADMIN_PASSWORD: ${{ secrets.TAWSEEL_ADMIN_PASSWORD }}
-          AGENT_MODEL: llama-3.3-70b-versatile
+          AGENT_MODEL: openai/gpt-oss-120b
           HEADLESS: "1"
         run: python recon.py
 
@@ -58,7 +58,7 @@ jobs:
           TAWSEEL_COURIER_PASSWORD: ${{ secrets.TAWSEEL_COURIER_PASSWORD }}
           TAWSEEL_ADMIN_EMAIL: ${{ secrets.TAWSEEL_ADMIN_EMAIL }}
           TAWSEEL_ADMIN_PASSWORD: ${{ secrets.TAWSEEL_ADMIN_PASSWORD }}
-          AGENT_MODEL: llama-3.3-70b-versatile
+          AGENT_MODEL: openai/gpt-oss-120b
           HEADLESS: "1"
         run: python orchestrator.py
 
