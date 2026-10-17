@@ -89,14 +89,21 @@ class BrowserSession:
                 self.goto(a["url"])
 
             elif kind == "click":
-                self.page.click(sel, timeout=10000)
+                # force=True ensures React doesn't block the click if another element is overlapping
+                self.page.click(sel, timeout=10000, force=True)
                 self.page.wait_for_timeout(1400)
 
             elif kind == "type":
                 loc = self.page.locator(sel)
                 loc.click(timeout=10000)
-                loc.fill(a.get("text", ""), timeout=10000)
-                self.page.wait_for_timeout(400)
+                # Clear the field first
+                loc.press("Control+A")
+                loc.press("Backspace")
+                # Type slowly like a human so React registers the state change
+                loc.press_sequentially(a.get("text", ""), delay=100)
+                # Blur the field so React processes the input
+                loc.press("Tab")
+                self.page.wait_for_timeout(600)
 
             elif kind == "select":
                 try:
