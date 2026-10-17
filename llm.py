@@ -16,7 +16,7 @@ def client():
 
 def decide(system, user):
     r = client().chat.completions.create(
-        model=os.getenv("AGENT_MODEL", "llama-3.3-70b-versatile"),
+        model=os.getenv("AGENT_MODEL", "openai/gpt-oss-120b"),
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
