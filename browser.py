@@ -96,14 +96,12 @@ class BrowserSession:
             elif kind == "type":
                 loc = self.page.locator(sel)
                 loc.click(timeout=10000)
-                # Clear the field first
-                loc.press("Control+A")
-                loc.press("Backspace")
-                # Type slowly like a human so React registers the state change
-                loc.press_sequentially(a.get("text", ""), delay=100)
-                # Blur the field so React processes the input
-                loc.press("Tab")
-                self.page.wait_for_timeout(600)
+                # fill() is the most reliable way to trigger React onChange events
+                loc.fill(a.get("text", ""), timeout=10000)
+                # Dispatch manual input events just in case React missed it
+                loc.dispatch_event("input")
+                loc.dispatch_event("change")
+                self.page.wait_for_timeout(1000) # Wait a full second for React to catch up
 
             elif kind == "select":
                 try:
