@@ -46,18 +46,11 @@ SNAPSHOT_JS = r"""
 """
 
 class BrowserSession:
-    """One independent logged-in browser session per agent."""
-
     def __init__(self, name, browser):
         self.name = name
-        self.context = browser.new_context(
-            viewport={"width": 1280, "height": 900},
-            locale="en-US",
-        )
+        self.context = browser.new_context(viewport={"width": 1280, "height": 900})
         self.page = self.context.new_page()
         self.step = 0
-
-    # ---------- observation ----------
 
     def goto(self, url):
         self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
@@ -77,8 +70,6 @@ class BrowserSession:
             pass
         return path
 
-    # ---------- action ----------
-
     def act(self, a):
         kind = (a.get("action") or "").lower()
         idx = a.get("index")
@@ -89,19 +80,25 @@ class BrowserSession:
                 self.goto(a["url"])
 
             elif kind == "click":
-                # force=True ensures React doesn't block the click if another element is overlapping
                 self.page.click(sel, timeout=10000, force=True)
                 self.page.wait_for_timeout(1400)
 
             elif kind == "type":
-                loc = self.page.locator(sel)
-                loc.click(timeout=10000)
-                # fill() is the most reliable way to trigger React onChange events
-                loc.fill(a.get("text", ""), timeout=10000)
-                # Dispatch manual input events just in case React missed it
-                loc.dispatch_event("input")
-                loc.dispatch_event("change")
-                self.page.wait_for_timeout(1000) # Wait a full second for React to catch up
+                # THE REACT FIX: Inject native JS events to force React to update state
+                text_to_type = a.get("text", "")
+                self.page.evaluate("""([selector, value]) => {
+                    const el = document.querySelector(selector);
+                    if (!el) return;
+                    el.focus();
+                    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                        window.HTMLInputElement.prototype, 'value'
+                    ).set;
+                    nativeInputValueSetter.call(el, value);
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    el.blur();
+                }""", [sel, text_to_type])
+                self.page.wait_for_timeout(600)
 
             elif kind == "select":
                 try:
@@ -115,15 +112,11 @@ class BrowserSession:
                 self.page.wait_for_timeout(1400)
 
             elif kind == "upload":
-                # element is a visible file input
                 self.page.set_input_files(sel, a["path"], timeout=10000)
                 self.page.wait_for_timeout(1500)
 
             elif kind == "upload_any":
-                # fallback: hidden <input type=file> not in our snapshot
-                self.page.locator('input[type="file"]').first.set_input_files(
-                    a["path"], timeout=10000
-                )
+                self.page.locator('input[type="file"]').first.set_input_files(a["path"], timeout=10000)
                 self.page.wait_for_timeout(1500)
 
             elif kind == "scroll":
