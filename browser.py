@@ -1,46 +1,32 @@
 import os
 from config import ARTIFACT_DIR
 
-# Number every interactive element on the page so the LLM can refer to it by index.
 SNAPSHOT_JS = r"""
 () => {
   document.querySelectorAll('[data-tw-idx]').forEach(e => e.removeAttribute('data-tw-idx'));
-
   const sel = 'a,button,input,select,textarea,[role="button"],[role="link"],[role="tab"],[onclick]';
   const out = [];
   let idx = 0;
-
   for (const el of document.querySelectorAll(sel)) {
     const r = el.getBoundingClientRect();
     const st = window.getComputedStyle(el);
     if (r.width <= 0 || r.height <= 0) continue;
     if (st.visibility === 'hidden' || st.display === 'none' || st.opacity === '0') continue;
     if (el.disabled) continue;
-
-    const raw = el.innerText || el.value || el.placeholder ||
-                el.getAttribute('aria-label') || el.name || el.title || '';
+    const raw = el.innerText || el.value || el.placeholder || el.getAttribute('aria-label') || el.name || el.title || '';
     const label = String(raw).trim().replace(/\s+/g, ' ').slice(0, 120);
-
     el.setAttribute('data-tw-idx', String(idx));
     out.push({
-      i: idx,
-      tag: el.tagName.toLowerCase(),
-      type: el.type || '',
-      label: label,
-      name: el.name || '',
-      placeholder: el.placeholder || '',
+      i: idx, tag: el.tagName.toLowerCase(), type: el.type || '', label: label,
+      name: el.name || '', placeholder: el.placeholder || '',
       value: ('value' in el) ? String(el.value || '').slice(0, 60) : '',
     });
     idx++;
     if (idx >= 150) break;
   }
-
   return {
-    url: location.href,
-    title: document.title,
-    elements: out,
-    bodyText: (document.body ? document.body.innerText : '')
-      .replace(/\n{2,}/g, '\n').slice(0, 4000),
+    url: location.href, title: document.title, elements: out,
+    bodyText: (document.body ? document.body.innerText : '').replace(/\n{2,}/g, '\n').slice(0, 4000),
   };
 }
 """
@@ -48,7 +34,11 @@ SNAPSHOT_JS = r"""
 class BrowserSession:
     def __init__(self, name, browser):
         self.name = name
-        self.context = browser.new_context(viewport={"width": 1280, "height": 900})
+        # Disguise the bot as a real Android phone to bypass WAF blocks
+        self.context = browser.new_context(
+            viewport={"width": 1280, "height": 900},
+            user_agent="Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"
+        )
         self.page = self.context.new_page()
         self.step = 0
 
@@ -80,19 +70,25 @@ class BrowserSession:
                 self.goto(a["url"])
 
             elif kind == "click":
+                # FORENSICS: Print the exact password length to the GitHub logs before clicking
+                try:
+                    email_val = self.page.evaluate("document.querySelector('input[type=\"email\"]')?.value || 'N/A'")
+                    pass_val = self.page.evaluate("document.querySelector('input[type=\"password\"]')?.value || 'N/A'")
+                    print(f"\n[DEBUG-FORM] Submitting form -> Email: '{email_val}' | Password Length: {len(pass_val)} (Expected: 13)\n", flush=True)
+                except Exception:
+                    pass
+
                 self.page.click(sel, timeout=10000, force=True)
                 self.page.wait_for_timeout(1400)
 
             elif kind == "type":
-                # THE REACT FIX: Inject native JS events to force React to update state
                 text_to_type = a.get("text", "")
+                # Use native JS to force React to accept the input
                 self.page.evaluate("""([selector, value]) => {
                     const el = document.querySelector(selector);
                     if (!el) return;
                     el.focus();
-                    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                        window.HTMLInputElement.prototype, 'value'
-                    ).set;
+                    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                     nativeInputValueSetter.call(el, value);
                     el.dispatchEvent(new Event('input', { bubbles: true }));
                     el.dispatchEvent(new Event('change', { bubbles: true }));
