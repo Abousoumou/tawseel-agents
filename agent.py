@@ -44,7 +44,7 @@ class Agent:
 
 RULES
 1. You act by choosing ONE action per turn, referring to elements by their index number.
-2. When you land on a login screen, log in with the credentials given in YOUR CREDENTIALS.
+2. When you land on a login screen, follow the LOGIN INSTRUCTIONS in your persona strictly.
 3. Never claim success you cannot see. Only use "done" when PAGE TEXT confirms it.
 4. If you are blocked by OTP, CAPTCHA, or a page that never loads, use "fail".
 5. If the same action fails twice, change approach (scroll, goto the base URL, different element).
@@ -71,8 +71,7 @@ SHARED CONTEXT (same for all agents)
 {json.dumps(context, indent=2, ensure_ascii=False)}
 
 YOUR CREDENTIALS
-email:    {self.creds.email}
-password: {self.creds.password}
+Use exactly "YOUR_EMAIL" for the email field and "YOUR_PASSWORD" for the password field. The system will replace these with the real values automatically.
 
 STEP {step + 1} of {max_steps}
 CURRENT URL: {snap["url"]}
@@ -103,6 +102,13 @@ Choose the single next action. JSON only."""
                 continue
 
             act = (d.get("action") or "").lower()
+
+            # Inject real credentials directly from Secrets to prevent LLM hallucination
+            if act == "type":
+                if d.get("text") == "YOUR_EMAIL":
+                    d["text"] = self.creds.email
+                elif d.get("text") == "YOUR_PASSWORD":
+                    d["text"] = self.creds.password
 
             if act == "done":
                 return {
