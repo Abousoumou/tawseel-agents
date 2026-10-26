@@ -75,7 +75,7 @@ def main():
                 f"If there is no account and sign-up is available, create one. "
                 f"Stop with 'done' once you can see your role's dashboard.",
                 CONTEXT,
-                max_steps=20, # Increased for slow networks
+                max_steps=20,
             )
             results[f"login_{role}"] = record(role, res)
             if res["status"] != "done":
@@ -88,13 +88,23 @@ def main():
             phase("PHASE 2 — Sender creates a delivery order")
             res = agents["sender"].run_task(
                 "Create a new delivery order using the details in SHARED CONTEXT -> order. "
-                "Fill every required field. If there is a date/time picker, pick a time 2 hours from now. "
-                "If there is a map, you may just type the address into the search bar and select the first suggestion. "
-                "If the app asks for a vehicle type, use the 'vehicle_preference'. Submit the order. "
-                "In 'result', return the order id / reference number, the quoted price, and "
-                "the order status you see on screen.",
+                "Follow these EXACT steps:\n"
+                "1. Fill 'Sender Mobile', 'Receiver Name', 'Receiver Mobile', 'Items' (type 1), 'Parcels' (type 1).\n"
+                "2. Leave 'Delivery Type' as 'Single Location'.\n"
+                "3. Fill 'Pickup Location' with the pickup address from context.\n"
+                "4. Fill 'Delivery Location' with the dropoff address from context.\n"
+                "5. Set 'Weight' to 'Small (1-3kg)'.\n"
+                "6. Set 'Size' to 'Small'.\n"
+                "7. Set 'Urgency' to 'Normal' or 'Standard' (do not pick Ultra Urgent).\n"
+                "8. Set 'Sensibility' to 'Normal'.\n"
+                "9. Set 'Payment' to 'Pay in Advance - Card' or 'Cash on Delivery' (whichever is available).\n"
+                "10. Set 'Pricing Mode' to 'Auction Mode'.\n"
+                "11. Set 'Trip Type' to 'One Way'.\n"
+                "12. Fill 'Distance (km)' with the number 5.\n"
+                "13. Scroll down and click the submit button (often labeled 'Create Order', 'Submit', or 'Place Order').\n"
+                "In 'result', return the order id / reference number, the quoted price, and the order status you see on screen.",
                 CONTEXT,
-                max_steps=35, # Increased for complex forms
+                max_steps=50, # Increased for this massive form
             )
             results["create_order"] = record("sender", res)
             if res.get("result"):
