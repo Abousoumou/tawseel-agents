@@ -75,7 +75,7 @@ def main():
                 f"If there is no account and sign-up is available, create one. "
                 f"Stop with 'done' once you can see your role's dashboard.",
                 CONTEXT,
-                max_steps=12,
+                max_steps=22,
             )
             results[f"login_{role}"] = record(role, res)
             if res["status"] != "done":
