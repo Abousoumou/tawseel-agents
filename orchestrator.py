@@ -75,7 +75,7 @@ def main():
                 f"If there is no account and sign-up is available, create one. "
                 f"Stop with 'done' once you can see your role's dashboard.",
                 CONTEXT,
-                max_steps=80,
+                max_steps=20, # Increased for slow networks
             )
             results[f"login_{role}"] = record(role, res)
             if res["status"] != "done":
@@ -88,12 +88,13 @@ def main():
             phase("PHASE 2 — Sender creates a delivery order")
             res = agents["sender"].run_task(
                 "Create a new delivery order using the details in SHARED CONTEXT -> order. "
-                "Fill every required field. If the app asks for a vehicle type, use the "
-                "vehicle_preference. Submit the order. "
+                "Fill every required field. If there is a date/time picker, pick a time 2 hours from now. "
+                "If there is a map, you may just type the address into the search bar and select the first suggestion. "
+                "If the app asks for a vehicle type, use the 'vehicle_preference'. Submit the order. "
                 "In 'result', return the order id / reference number, the quoted price, and "
                 "the order status you see on screen.",
                 CONTEXT,
-                max_steps=MAX_STEPS,
+                max_steps=35, # Increased for complex forms
             )
             results["create_order"] = record("sender", res)
             if res.get("result"):
@@ -110,7 +111,7 @@ def main():
                 "Open it and submit a bid: a reasonable price, a short ETA, and the scooter "
                 "vehicle type. In 'result', report the order id and the bid you submitted.",
                 CONTEXT,
-                max_steps=MAX_STEPS,
+                max_steps=30,
             )
             results["courier_bid"] = record("courier", res)
             if res.get("result"):
@@ -126,7 +127,7 @@ def main():
                 "Review the bid from the delivery agent and accept it. "
                 "In 'result', report the accepted price, the delivery agent name, and the ETA.",
                 CONTEXT,
-                max_steps=MAX_STEPS,
+                max_steps=25,
             )
             results["accept_bid"] = record("sender", res)
             if res.get("result"):
@@ -145,7 +146,7 @@ def main():
                 "'upload_any' if you cannot find one). "
                 "In 'result', report the final order status and your earnings shown for this order.",
                 CONTEXT,
-                max_steps=MAX_STEPS,
+                max_steps=30,
             )
             results["delivery"] = record("courier", res)
             if res.get("result"):
@@ -161,7 +162,7 @@ def main():
                 "Rate the delivery agent. "
                 "In 'result', report the final order status and the amount you were charged.",
                 CONTEXT,
-                max_steps=MAX_STEPS,
+                max_steps=20,
             )
             results["confirm"] = record("sender", res)
             if res.get("result"):
@@ -183,7 +184,7 @@ def main():
             "QA test order described in SHARED CONTEXT. Return the structured result object "
             "described in your instructions.\n\n" + checks,
             CONTEXT,
-            max_steps=MAX_STEPS,
+            max_steps=25,
         )
         results["evaluation"] = record("evaluator", res)
 
