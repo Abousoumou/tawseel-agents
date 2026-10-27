@@ -75,7 +75,7 @@ def main():
                 f"If there is no account and sign-up is available, create one. "
                 f"Stop with 'done' once you can see your role's dashboard.",
                 CONTEXT,
-                max_steps=20,
+                max_steps=25,
             )
             results[f"login_{role}"] = record(role, res)
             if res["status"] != "done":
@@ -104,7 +104,7 @@ def main():
                 "13. Scroll down and click the submit button (often labeled 'Create Order', 'Submit', or 'Place Order').\n"
                 "In 'result', return the order id / reference number, the quoted price, and the order status you see on screen.",
                 CONTEXT,
-                max_steps=50, # Increased for this massive form
+                max_steps=65, 
             )
             results["create_order"] = record("sender", res)
             if res.get("result"):
@@ -121,7 +121,7 @@ def main():
                 "Open it and submit a bid: a reasonable price, a short ETA, and the scooter "
                 "vehicle type. In 'result', report the order id and the bid you submitted.",
                 CONTEXT,
-                max_steps=30,
+                max_steps=60, # Increased to 60 to give the Courier plenty of time
             )
             results["courier_bid"] = record("courier", res)
             if res.get("result"):
@@ -137,7 +137,7 @@ def main():
                 "Review the bid from the delivery agent and accept it. "
                 "In 'result', report the accepted price, the delivery agent name, and the ETA.",
                 CONTEXT,
-                max_steps=25,
+                max_steps=40,
             )
             results["accept_bid"] = record("sender", res)
             if res.get("result"):
@@ -156,7 +156,7 @@ def main():
                 "'upload_any' if you cannot find one). "
                 "In 'result', report the final order status and your earnings shown for this order.",
                 CONTEXT,
-                max_steps=30,
+                max_steps=45,
             )
             results["delivery"] = record("courier", res)
             if res.get("result"):
@@ -172,7 +172,7 @@ def main():
                 "Rate the delivery agent. "
                 "In 'result', report the final order status and the amount you were charged.",
                 CONTEXT,
-                max_steps=20,
+                max_steps=30,
             )
             results["confirm"] = record("sender", res)
             if res.get("result"):
@@ -194,7 +194,7 @@ def main():
             "QA test order described in SHARED CONTEXT. Return the structured result object "
             "described in your instructions.\n\n" + checks,
             CONTEXT,
-            max_steps=25,
+            max_steps=30,
         )
         results["evaluation"] = record("evaluator", res)
 
@@ -260,3 +260,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
